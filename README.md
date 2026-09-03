@@ -17,6 +17,7 @@ The raw value `-128` is reserved for no-data.
 - `aef_gpu_benchmark/Dequantize.metal`: standalone int8-to-float32 dequantisation.
 - `aef_gpu_benchmark/FusedCosine.metal`: fused dequantisation, dot product, norm, and cosine similarity.
 - Swift runners compile the Metal source at runtime and benchmark the Apple GPU.
+- `aef_gpu_benchmark/gpu_worker.swift`: persistent worker that loads Metal once and processes multiple tile jobs.
 - Python scripts extract a COG overview and provide NumPy CPU baselines.
 
 ## Reproducing the test
@@ -58,6 +59,16 @@ swiftc aef_gpu_benchmark/benchmark_fused.swift -framework Metal \
   overview_1024x1024x64.gpu_cosine.f32
 ```
 
+Run the persistent worker:
+
+```bash
+swiftc aef_gpu_benchmark/gpu_worker.swift -framework Metal \
+  -o aef_gpu_benchmark/gpu_worker
+python3 aef_gpu_benchmark/test_persistent_worker.py
+```
+
+The worker accepts tab-separated `input.raw`, `query.f32`, and `output.f32` paths, one job per line, and exits on `QUIT`.
+
 ## Initial Apple M1 results
 
 On a 1024x1024 overview containing 67,108,864 int8 values:
@@ -66,6 +77,7 @@ On a 1024x1024 overview containing 67,108,864 int8 values:
 |---|---:|---:|---:|
 | Dequantisation | 310 ms | 7.1 ms | 43.6x |
 | Fused cosine similarity | 604 ms | 10.6 ms | 57.1x |
+| Persistent worker job | 754 ms | 50 ms | 15.1x |
 
 The GPU and CPU fused cosine outputs agreed within 1.2e-7 maximum absolute error.
 
