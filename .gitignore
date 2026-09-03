@@ -1,0 +1,8 @@
+.DS_Store
+*.raw
+*.tiff
+*.tif
+*.f32
+aef_gpu_benchmark/benchmark
+aef_gpu_benchmark/benchmark_fused
+__pycache__/
