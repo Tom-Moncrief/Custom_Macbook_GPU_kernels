@@ -82,3 +82,22 @@ On a 1024x1024 overview containing 67,108,864 int8 values:
 The GPU and CPU fused cosine outputs agreed within 1.2e-7 maximum absolute error.
 
 The full 8192x8192 tile must be processed in spatial chunks: expanding all 64 channels to float32 would require approximately 16 GiB.
+
+## Random forest inference
+
+The forest engine compiles scikit-learn random forests into flat Metal buffers and traverses them directly over the quantised int8 AlphaEarth channels. It supports classification and regression, packed feature/threshold metadata, threadgroup feature caching, pixel-tree parallelism, and batched command submission.
+
+Build and run the representative test forest:
+
+```bash
+python3 aef_gpu_benchmark/build_rf_model.py
+python3 aef_gpu_benchmark/benchmark_cpu_forest.py
+swiftc aef_gpu_benchmark/benchmark_forest_parallel.swift -framework Metal \\
+  -o aef_gpu_benchmark/benchmark_forest_parallel
+./aef_gpu_benchmark/benchmark_forest_parallel \\
+  aef_gpu_benchmark/rf_regression \\
+  aef_gpu_benchmark/overview_1024x1024x64.raw \\
+  rf_regression.gpu.f32 4 packed cached
+```
+
+On the Apple M1 test machine, a 256-tree, 702,512-node regression forest scored 1,048,576 pixels in about 270 ms, versus 2.11 s with scikit-learn. The GPU result had mean absolute error about 1.5e-7 relative to the CPU reference.
